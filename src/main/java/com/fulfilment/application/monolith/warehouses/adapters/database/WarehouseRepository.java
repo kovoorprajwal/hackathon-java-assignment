@@ -6,9 +6,12 @@ import io.quarkus.hibernate.orm.panache.PanacheRepository;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class WarehouseRepository implements WarehouseStore, PanacheRepository<DbWarehouse> {
+
+  private static final Logger LOGGER = Logger.getLogger(WarehouseRepository.class);
 
   @Override
   public List<Warehouse> getAll() {
@@ -38,6 +41,8 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
       dbWarehouse.capacity = warehouse.capacity;
       dbWarehouse.stock = warehouse.stock;
       dbWarehouse.archivedAt = warehouse.archivedAt;
+    } else {
+      LOGGER.warnf("Update skipped: warehouse with businessUnitCode '%s' not found", warehouse.businessUnitCode);
     }
   }
 

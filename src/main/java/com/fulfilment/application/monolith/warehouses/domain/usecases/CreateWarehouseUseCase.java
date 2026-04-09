@@ -7,9 +7,12 @@ import com.fulfilment.application.monolith.warehouses.domain.ports.LocationResol
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.transaction.Transactional;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class CreateWarehouseUseCase implements CreateWarehouseOperation {
+
+  private static final Logger LOGGER = Logger.getLogger(CreateWarehouseUseCase.class);
 
   private final WarehouseStore warehouseStore;
   private final LocationResolver locationResolver;
@@ -25,6 +28,7 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
     // Validation 1: Business unit code must be unique
     Warehouse existing = warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
     if (existing != null) {
+      LOGGER.warnf("Warehouse creation rejected: business unit code '%s' already exists", warehouse.businessUnitCode);
       throw new IllegalArgumentException(
           "Warehouse with business unit code '" + warehouse.businessUnitCode + "' already exists");
     }
@@ -32,6 +36,7 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
     // Validation 2: Location must be valid (must exist)
     Location location = locationResolver.resolveByIdentifier(warehouse.location);
     if (location == null) {
+      LOGGER.warnf("Warehouse creation rejected: location '%s' is not valid", warehouse.location);
       throw new IllegalArgumentException(
           "Location '" + warehouse.location + "' is not valid");
     }
@@ -56,5 +61,6 @@ public class CreateWarehouseUseCase implements CreateWarehouseOperation {
 
     // All validations passed, create the warehouse
     warehouseStore.create(warehouse);
+    LOGGER.infof("Warehouse created successfully: businessUnitCode=%s, location=%s", warehouse.businessUnitCode, warehouse.location);
   }
 }
