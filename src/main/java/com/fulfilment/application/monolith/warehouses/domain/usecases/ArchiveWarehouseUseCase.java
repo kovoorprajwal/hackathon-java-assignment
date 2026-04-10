@@ -4,9 +4,12 @@ import com.fulfilment.application.monolith.warehouses.domain.models.Warehouse;
 import com.fulfilment.application.monolith.warehouses.domain.ports.ArchiveWarehouseOperation;
 import com.fulfilment.application.monolith.warehouses.domain.ports.WarehouseStore;
 import jakarta.enterprise.context.ApplicationScoped;
+import org.jboss.logging.Logger;
 
 @ApplicationScoped
 public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
+
+  private static final Logger LOGGER = Logger.getLogger(ArchiveWarehouseUseCase.class);
 
   private final WarehouseStore warehouseStore;
 
@@ -17,14 +20,17 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
   @Override
   public void archive(Warehouse warehouse) {
     // Validation 1: Warehouse must exist
+    LOGGER.infof("Archiving warehouse: businessUnitCode=%s", warehouse.businessUnitCode);
     Warehouse existing = warehouseStore.findByBusinessUnitCode(warehouse.businessUnitCode);
     if (existing == null) {
+      LOGGER.warnf("Archive rejected: warehouse '%s' does not exist", warehouse.businessUnitCode);
       throw new IllegalArgumentException(
           "Warehouse with business unit code '" + warehouse.businessUnitCode + "' does not exist");
     }
 
     // Validation 2: Warehouse must not already be archived
     if (existing.archivedAt != null) {
+      LOGGER.warnf("Archive rejected: warehouse '%s' is already archived", warehouse.businessUnitCode);
       throw new IllegalArgumentException(
           "Warehouse with business unit code '" + warehouse.businessUnitCode + "' is already archived");
     }
@@ -34,5 +40,6 @@ public class ArchiveWarehouseUseCase implements ArchiveWarehouseOperation {
 
     // Update the warehouse
     warehouseStore.update(existing);
+    LOGGER.infof("Warehouse archived successfully: businessUnitCode=%s", warehouse.businessUnitCode);
   }
 }

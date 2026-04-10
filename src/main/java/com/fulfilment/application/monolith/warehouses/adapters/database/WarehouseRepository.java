@@ -30,6 +30,7 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
     dbWarehouse.archivedAt = warehouse.archivedAt;
     
     this.persist(dbWarehouse);
+    LOGGER.infof("Warehouse persisted: businessUnitCode=%s, location=%s", warehouse.businessUnitCode, warehouse.location);
   }
 
   @Override
@@ -47,15 +48,23 @@ public class WarehouseRepository implements WarehouseStore, PanacheRepository<Db
   }
 
   @Override
+  @Transactional
   public void remove(Warehouse warehouse) {
-    // TODO Auto-generated method stub
-    throw new UnsupportedOperationException("Unimplemented method 'remove'");
+    DbWarehouse dbWarehouse = find("businessUnitCode", warehouse.businessUnitCode).firstResult();
+    if (dbWarehouse != null) {
+      this.delete(dbWarehouse);
+    } else {
+      LOGGER.warnf("Remove skipped: warehouse with businessUnitCode '%s' not found", warehouse.businessUnitCode);
+    }
   }
 
   @Override
   @Transactional
   public Warehouse findByBusinessUnitCode(String buCode) {
     DbWarehouse dbWarehouse = find("businessUnitCode", buCode).firstResult();
+    if (dbWarehouse == null) {
+      LOGGER.debugf("Warehouse lookup returned no result for businessUnitCode=%s", buCode);
+    }
     return dbWarehouse != null ? dbWarehouse.toWarehouse() : null;
   }
 }

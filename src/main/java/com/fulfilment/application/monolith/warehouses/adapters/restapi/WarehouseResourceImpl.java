@@ -12,9 +12,12 @@ import jakarta.transaction.Transactional;
 import jakarta.validation.constraints.NotNull;
 import jakarta.ws.rs.WebApplicationException;
 import java.util.List;
+import org.jboss.logging.Logger;
 
 @RequestScoped
 public class WarehouseResourceImpl implements WarehouseResource {
+
+  private static final Logger LOGGER = Logger.getLogger(WarehouseResourceImpl.class);
 
   @Inject private WarehouseRepository warehouseRepository;
   @Inject private CreateWarehouseOperation createWarehouseOperation;
@@ -23,6 +26,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
   @Override
   public List<Warehouse> listAllWarehousesUnits() {
+    LOGGER.info("Listing all warehouse units");
     return warehouseRepository.getAll().stream().map(this::toWarehouseResponse).toList();
   }
 
@@ -39,10 +43,11 @@ public class WarehouseResourceImpl implements WarehouseResource {
     try {
       // Create warehouse through use case (includes validations)
       createWarehouseOperation.create(domainWarehouse);
-      
+      LOGGER.infof("Warehouse unit created via REST: businessUnitCode=%s", domainWarehouse.businessUnitCode);
       // Return the created warehouse
       return toWarehouseResponse(domainWarehouse);
     } catch (IllegalArgumentException e) {
+      LOGGER.warnf("Create warehouse request rejected: %s", e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }
@@ -50,9 +55,11 @@ public class WarehouseResourceImpl implements WarehouseResource {
   @Override
   public Warehouse getAWarehouseUnitByID(String id) {
     // Find warehouse by business unit code
+    LOGGER.infof("Fetching warehouse by ID: %s", id);
     var domainWarehouse = warehouseRepository.findByBusinessUnitCode(id);
     
     if (domainWarehouse == null) {
+      LOGGER.warnf("Warehouse not found: %s", id);
       throw new WebApplicationException("Warehouse with business unit code '" + id + "' not found", 404);
     }
     
@@ -73,6 +80,7 @@ public class WarehouseResourceImpl implements WarehouseResource {
       // Archive warehouse through use case (includes validations)
       archiveWarehouseOperation.archive(domainWarehouse);
     } catch (IllegalArgumentException e) {
+      LOGGER.warnf("Archive warehouse request rejected: %s", e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }
@@ -94,8 +102,10 @@ public class WarehouseResourceImpl implements WarehouseResource {
 
       // Return the updated warehouse
       var updated = warehouseRepository.findByBusinessUnitCode(businessUnitCode);
+      LOGGER.infof("Warehouse unit replaced via REST: businessUnitCode=%s", businessUnitCode);
       return toWarehouseResponse(updated);
     } catch (IllegalArgumentException e) {
+      LOGGER.warnf("Replace warehouse request rejected: %s", e.getMessage());
       throw new WebApplicationException(e.getMessage(), 400);
     }
   }
